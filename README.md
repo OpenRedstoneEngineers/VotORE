@@ -1,2 +1,2 @@
 # VotORE
-Status: wOREk in progress...
+Status: wOREk in progress... (But it mostly works!)
