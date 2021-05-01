@@ -1,6 +1,7 @@
 package org.openredstone
 
 import net.md_5.bungee.api.ChatColor
+import net.md_5.bungee.api.chat.BaseComponent
 import net.md_5.bungee.api.chat.ClickEvent
 import net.md_5.bungee.api.chat.ComponentBuilder
 import net.md_5.bungee.api.chat.HoverEvent
@@ -11,7 +12,7 @@ import org.openredstone.entity.Ballot
 
 // TODO ........... clean this up
 fun ProxiedPlayer.printSubmittableBallot(ballot: Ballot) {
-    for ( i in 1..100) this.sendMessage(*ComponentBuilder().create())
+    for (i in 1..100) this.sendMessage(*ComponentBuilder().create())
     this.sendMessage(
         *ComponentBuilder()
             .append("   ").reset().color(ChatColor.YELLOW).strikethrough(true)
@@ -21,13 +22,14 @@ fun ProxiedPlayer.printSubmittableBallot(ballot: Ballot) {
     )
     this.sendMessage(
         *ComponentBuilder()
-            .append(" Shown below are the candidates you have selected for your ballot in order from most to least preferred. ").color(ChatColor.GRAY)
+            .append(" Shown below are the candidates you have selected for your ballot in order from most to least preferred. ")
+            .color(ChatColor.GRAY)
             .create()
     )
     ballot.includedNominees.forEachIndexed { i, it ->
         this.sendMessage(
             *ComponentBuilder()
-                .append("${i+1}").color(ChatColor.GOLD).bold(true)
+                .append("${i + 1}").color(ChatColor.GOLD).bold(true)
                 .append(" - ").reset().color(ChatColor.WHITE)
                 .append(it).color(ChatColor.YELLOW).bold(true)
                 .create()
@@ -41,8 +43,8 @@ fun ProxiedPlayer.printSubmittableBallot(ballot: Ballot) {
     this.sendMessage(
         *ComponentBuilder()
             .append("Click here to modify your ballot").color(ChatColor.GOLD).bold(true)
-                .event(ClickEvent(ClickEvent.Action.RUN_COMMAND, "/election vote modifyballot"))
-                .event(HoverEvent(HoverEvent.Action.SHOW_TEXT, Text("Modify your ballot")))
+            .event(ClickEvent(ClickEvent.Action.RUN_COMMAND, "/election vote modifyballot"))
+            .event(HoverEvent(HoverEvent.Action.SHOW_TEXT, Text("Modify your ballot")))
             .create()
     )
     this.sendMessage(
@@ -56,7 +58,7 @@ fun ProxiedPlayer.printSubmittableBallot(ballot: Ballot) {
 
 // TODO .................... clean this up also
 fun ProxiedPlayer.printBallot(ballot: Ballot, error: String? = null) {
-    for ( i in 1..100) this.sendMessage(*ComponentBuilder().create())
+    for (i in 1..100) this.sendMessage(*ComponentBuilder().create())
     error?.let {
         this.sendMessage(
             *ComponentBuilder()
@@ -72,12 +74,12 @@ fun ProxiedPlayer.printBallot(ballot: Ballot, error: String? = null) {
             .append(" Your current ballot ").reset().color(ChatColor.GOLD).bold(true)
             .append("      ").reset().color(ChatColor.YELLOW).strikethrough(true)
             .append(" ☑ ").reset().color(ChatColor.GREEN).bold(true)
-                .event(ClickEvent(ClickEvent.Action.RUN_COMMAND, "/election vote submit"))
-                .event(HoverEvent(HoverEvent.Action.SHOW_TEXT, Text("Submit your vote (You can alter this later)")))
+            .event(ClickEvent(ClickEvent.Action.RUN_COMMAND, "/election vote submit"))
+            .event(HoverEvent(HoverEvent.Action.SHOW_TEXT, Text("Submit your vote (You can alter this later)")))
             .append("|").reset().color(ChatColor.YELLOW).bold(true)
             .append(" ☒ ").reset().color(ChatColor.RED).bold(true)
-                .event(ClickEvent(ClickEvent.Action.RUN_COMMAND, "/election vote cancel"))
-                .event(HoverEvent(HoverEvent.Action.SHOW_TEXT, Text("Halt voting (You can vote again any time)")))
+            .event(ClickEvent(ClickEvent.Action.RUN_COMMAND, "/election vote cancel"))
+            .event(HoverEvent(HoverEvent.Action.SHOW_TEXT, Text("Halt voting (You can vote again any time)")))
             .create()
     )
     ballot.includedNominees.forEach {
@@ -94,12 +96,12 @@ fun ProxiedPlayer.printBallot(ballot: Ballot, error: String? = null) {
                     }
                 }
                 .append("ᐯ").reset().color(ChatColor.YELLOW).bold(true)
-                    .event(ClickEvent(ClickEvent.Action.RUN_COMMAND, "/election vote movedown $it"))
-                    .event(HoverEvent(HoverEvent.Action.SHOW_TEXT, Text("Move $it down your ballot")))
+                .event(ClickEvent(ClickEvent.Action.RUN_COMMAND, "/election vote movedown $it"))
+                .event(HoverEvent(HoverEvent.Action.SHOW_TEXT, Text("Move $it down your ballot")))
                 .append(" | ").reset().color(ChatColor.GOLD).bold(true)
                 .append("✕").reset().color(ChatColor.RED).bold(true)
-                    .event(ClickEvent(ClickEvent.Action.RUN_COMMAND, "/election vote remove $it"))
-                    .event(HoverEvent(HoverEvent.Action.SHOW_TEXT, Text("Remove $it from your ballot")))
+                .event(ClickEvent(ClickEvent.Action.RUN_COMMAND, "/election vote remove $it"))
+                .event(HoverEvent(HoverEvent.Action.SHOW_TEXT, Text("Remove $it from your ballot")))
                 .append("   $it").reset().color(ChatColor.WHITE)
                 .create()
         )
@@ -116,8 +118,8 @@ fun ProxiedPlayer.printBallot(ballot: Ballot, error: String? = null) {
             this.sendMessage(
                 *ComponentBuilder()
                     .append("ᐱ").color(ChatColor.YELLOW).bold(true)
-                        .event(ClickEvent(ClickEvent.Action.RUN_COMMAND, "/election vote addback $it"))
-                        .event(HoverEvent(HoverEvent.Action.SHOW_TEXT, Text("Add $it back to your ballot")))
+                    .event(ClickEvent(ClickEvent.Action.RUN_COMMAND, "/election vote addback $it"))
+                    .event(HoverEvent(HoverEvent.Action.SHOW_TEXT, Text("Add $it back to your ballot")))
                     .append(" - $it").reset().color(ChatColor.WHITE)
                     .create()
             )
@@ -126,21 +128,28 @@ fun ProxiedPlayer.printBallot(ballot: Ballot, error: String? = null) {
 }
 
 fun ProxiedPlayer.sendVotoreError(message: String) =
-    this.sendMessage(*ComponentBuilder()
-        .append("[").color(ChatColor.DARK_GRAY)
-        .append("VotORE").color(ChatColor.GRAY)
-        .append("] [").color(ChatColor.DARK_GRAY)
-        .append("!").color(ChatColor.RED).bold(true)
-        .append("] ").reset().color(ChatColor.DARK_GRAY)
-        .append(message).color(ChatColor.GRAY)
-        .create()
+    this.sendVotore(
+        ComponentBuilder()
+            .append("[").color(ChatColor.DARK_GRAY)
+            .append("!").color(ChatColor.RED).bold(true)
+            .append("] ").reset().color(ChatColor.DARK_GRAY)
+            .append(message).color(ChatColor.GRAY)
+            .create()
     )
 
 fun ProxiedPlayer.sendVotore(message: String) =
-    this.sendMessage(*ComponentBuilder()
-        .append("[").color(ChatColor.DARK_GRAY)
-        .append("VotORE").color(ChatColor.GRAY)
-        .append("] ").color(ChatColor.DARK_GRAY)
-        .append(message).color(ChatColor.GRAY)
-        .create()
+    this.sendVotore(
+        ComponentBuilder()
+            .append(message)
+            .create()
+    )
+
+fun ProxiedPlayer.sendVotore(component: Array<BaseComponent>) =
+    this.sendMessage(
+        *ComponentBuilder()
+            .append("[").color(ChatColor.DARK_GRAY)
+            .append("VotORE").color(ChatColor.GRAY)
+            .append("] ").color(ChatColor.DARK_GRAY)
+            .append(component).color(ChatColor.GRAY)
+            .create()
     )

@@ -2,6 +2,11 @@ package org.openredstone.commands
 
 import co.aikar.commands.BaseCommand
 import co.aikar.commands.annotation.*
+import net.md_5.bungee.api.ChatColor
+import net.md_5.bungee.api.chat.ClickEvent
+import net.md_5.bungee.api.chat.ComponentBuilder
+import net.md_5.bungee.api.chat.HoverEvent
+import net.md_5.bungee.api.chat.hover.content.Text
 import net.md_5.bungee.api.connection.ProxiedPlayer
 import org.openredstone.*
 import org.openredstone.entity.Ballot
@@ -33,12 +38,25 @@ class ElectionCommand(
             player.sendVotore("Created election with ballot: ${ballot.joinToString(", ")}")
         }
 
+        @Subcommand("votes")
+        @Conditions("activeelection")
+        fun votes(player: ProxiedPlayer) {
+            votore.database.currentElectionId()?.let {
+                player.sendVotore(
+                    "Total votes: ${
+                        votore.database.voteCounts(it)
+                    }"
+                )
+            }
+        }
+
         @Subcommand("end")
         @Conditions("activeelection")
         fun end(player: ProxiedPlayer) {
-            val elecId = votore.database.currentElectionId()
-            votore.database.endElection(elecId!!)
-            player.sendVotore("Ended election. View results by running '/election manage results'")
+            votore.database.currentElectionId()?.let {
+                votore.database.endElection(it)
+                player.sendVotore("Ended election. View results by running '/election manage results'")
+            }
         }
 
         @Subcommand("add")
@@ -52,8 +70,43 @@ class ElectionCommand(
         }
 
         @Subcommand("results")
-        fun results(player: ProxiedPlayer) {
-            player.sendVotore("TODO - Unimplemented")
+        fun results(player: ProxiedPlayer, @Single eligible: String) {
+            val electionId = votore.database.lastElectionId() ?: run {
+                player.sendVotoreError("No elections have taken place.")
+                return
+            }
+            val candidates = votore.database.electionBallot(electionId)
+            val votes = votore.database.votes(electionId)
+            val indexOffset = candidates.keys.minOrNull()?.minus(1) ?: run {
+                player.sendVotoreError("List of candidates are empty. (This isn't supposed to happen)")
+                return
+            }
+            val blt = StringBuilder()
+            blt.appendLine("${candidates.size} $eligible")
+            votes.groupBy(keySelector = { it.voter }, valueTransform = { it.candidate - indexOffset }).forEach {
+                blt.appendLine("1 ${it.value.joinToString(" ")} 0")
+            }
+            blt.appendLine("0")
+            candidates.values.forEach {
+                blt.appendLine("\"$it\"")
+            }
+            val response = khttp.post(
+                url = "https://dpaste.com/api/v2/",
+                headers = mapOf("User-Agent" to "ORE Election Services"),
+                data = mapOf(
+                    "content" to blt.toString(),
+                    "syntax" to "text",
+                    "title" to "ORE Election Results"
+                )
+            )
+            player.sendVotore(
+                ComponentBuilder()
+                    .append("URL: ").color(ChatColor.GRAY)
+                    .append(response.text.trim()).color(ChatColor.DARK_GRAY).underlined(true)
+                    .event(ClickEvent(ClickEvent.Action.OPEN_URL, response.text.trim()))
+                    .event(HoverEvent(HoverEvent.Action.SHOW_TEXT, Text(response.text.trim())))
+                    .create()
+            )
         }
     }
 
@@ -75,7 +128,8 @@ class ElectionCommand(
                 }
                 else -> {
                     votore.ballots[player.uniqueId] = Ballot(
-                        votore.database.electionBallot(votore.database.currentElectionId()!!).shuffled().toMutableList(),
+                        votore.database.electionBallot(votore.database.currentElectionId()!!).values.shuffled()
+                            .toMutableList(),
                         emptyList<String>().toMutableList()
                     )
                     player.printBallot(votore.ballots[player.uniqueId]!!)
@@ -132,7 +186,10 @@ class ElectionCommand(
                     ballot.excludedNominees.add(candidate)
                     player.printBallot(ballot)
                 }
-                in ballot.excludedNominees -> player.printBallot(ballot, "Cannot remove candidate who is not part of included ballots!")
+                in ballot.excludedNominees -> player.printBallot(
+                    ballot,
+                    "Cannot remove candidate who is not part of included ballots!"
+                )
                 else -> player.printBallot(ballot, "Candidate not part of ballot!")
             }
         }
@@ -140,7 +197,10 @@ class ElectionCommand(
         @Subcommand("addback")
         fun addback(player: ProxiedPlayer, ballot: Ballot, @Single candidate: String) {
             when (candidate) {
-                in ballot.includedNominees -> player.printBallot(ballot, "Cannot add candidate who is already part of included ballot!")
+                in ballot.includedNominees -> player.printBallot(
+                    ballot,
+                    "Cannot add candidate who is already part of included ballot!"
+                )
                 in ballot.excludedNominees -> {
                     ballot.excludedNominees.remove(candidate)
                     ballot.includedNominees.add(candidate)
@@ -186,14 +246,20 @@ class ElectionCommand(
                 votore.ballots.remove(player.uniqueId)
                 return
             }
-            if (!votore.database.electionBallot(electionId).containsAll(ballot.includedNominees)) {
+            if (!votore.database.electionBallot(electionId).values.containsAll(ballot.includedNominees)) {
                 player.sendVotoreError("The ballot you are trying to submit is malformed.")
                 player.sendVotoreError("If you are encountering this error after guided voting, please tell Staff immediately.")
                 player.sendVotoreError("You may restart your voting process at any time.")
                 votore.ballots.remove(player.uniqueId)
                 return
             }
-            votore.logger.info("Confirmed by ${player.name}:${player.uniqueId} vote: ${ballot.includedNominees.joinToString(", ")}")
+            votore.logger.info(
+                "Confirmed by ${player.name}:${player.uniqueId} vote: ${
+                    ballot.includedNominees.joinToString(
+                        ", "
+                    )
+                }"
+            )
             println("Confirmed vote: ${ballot.includedNominees.joinToString(", ")}")
             player.sendVotore("Your vote, in order of preference: ${ballot.includedNominees.joinToString(", ")}.")
             player.sendVotore("Excluded from your vote: ${ballot.excludedNominees.joinToString(", ")}")

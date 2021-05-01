@@ -1,6 +1,7 @@
 package org.openredstone.entity
 
 import org.jetbrains.exposed.sql.Table
+import java.util.*
 
 object Sql {
     object Election : Table("election") {
@@ -30,4 +31,10 @@ data class Ballot(
     val includedNominees: MutableList<String>,
     val excludedNominees: MutableList<String>,
     var submit: Boolean = false
+)
+
+data class Vote(
+    val voter: UUID,
+    val candidate: Int,
+    val index: Int
 )
