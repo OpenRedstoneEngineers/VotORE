@@ -51,7 +51,7 @@ class Sql(
     fun lastElectionId(): Int? = transaction(database) {
         Sql.Election.selectAll()
             .orderBy(Sql.Election.id to SortOrder.DESC)
-            .singleOrNull()?.get(Sql.Election.id)
+            .firstOrNull()?.get(Sql.Election.id)
     }
 
     fun electionBallot(electionId: Int): Map<Int, String> = transaction(database) {
