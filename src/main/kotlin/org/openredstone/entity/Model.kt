@@ -7,6 +7,7 @@ object Sql {
     object Election : Table("election") {
         val id = integer("elec_id").autoIncrement()
         val creator = binary("elec_creator", 16)
+        val winners = integer("elec_winners")
         val determined = bool("elec_determined").default(false)
         override val primaryKey = PrimaryKey(id)
     }

@@ -54,6 +54,12 @@ class Sql(
             .firstOrNull()?.get(Sql.Election.id)
     }
 
+    fun electionWinners(electionId: Int): Int? = transaction(database) {
+        Sql.Election.select {
+            Sql.Election.id eq electionId
+        }.firstOrNull()?.get(Sql.Election.winners)
+    }
+
     fun electionBallot(electionId: Int): Map<Int, String> = transaction(database) {
         Sql.Election.select {
             Sql.Election.id eq electionId
@@ -67,9 +73,10 @@ class Sql(
             }
     }
 
-    fun startElection(candidates: List<String>, creatorId: UUID) = transaction(database) {
+    fun startElection(winnerCount: Int, candidates: List<String>, creatorId: UUID) = transaction(database) {
         val elecId = Sql.Election.insert {
             it[creator] = creatorId.toBin()
+            it[winners] = winnerCount
         } get Sql.Election.id
         Sql.Candidate.batchInsert(candidates) { candidate ->
             this[Sql.Candidate.elecId] = elecId

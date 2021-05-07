@@ -28,13 +28,14 @@ class ElectionCommand(
     @CommandPermission("election.manage")
     inner class Manage : BaseCommand() {
         @Subcommand("create")
-        fun create(player: ProxiedPlayer, message: String) {
+        @CommandCompletion("@range:0-5 @players")
+        fun create(player: ProxiedPlayer, @Single winners: Int, message: String) {
             val elecId = votore.database.currentElectionId()
             if (elecId != null) throw VotOreException("Election already in progress.")
             val ballot = message
                 .split("\\s".toRegex())
                 .sortedWith(String.CASE_INSENSITIVE_ORDER)
-            votore.database.startElection(ballot, player.uniqueId)
+            votore.database.startElection(winners, ballot, player.uniqueId)
             player.sendVotore("Created election with ballot: ${ballot.joinToString(", ")}")
         }
 
@@ -70,7 +71,7 @@ class ElectionCommand(
         }
 
         @Subcommand("results")
-        fun results(player: ProxiedPlayer, @Single eligible: String) {
+        fun results(player: ProxiedPlayer) {
             val electionId = votore.database.lastElectionId() ?: run {
                 player.sendVotoreError("No elections have taken place.")
                 return
@@ -81,8 +82,9 @@ class ElectionCommand(
                 player.sendVotoreError("List of candidates are empty. (This isn't supposed to happen)")
                 return
             }
+            val winners = votore.database.electionWinners(electionId)
             val blt = StringBuilder()
-            blt.appendLine("${candidates.size} $eligible")
+            blt.appendLine("${candidates.size} $winners")
             votes.groupBy(keySelector = { it.voter }, valueTransform = { it.candidate - indexOffset }).forEach {
                 blt.appendLine("1 ${it.value.joinToString(" ")} 0")
             }
