@@ -1,155 +1,112 @@
 package org.openredstone
 
-import net.md_5.bungee.api.ChatColor
-import net.md_5.bungee.api.chat.BaseComponent
-import net.md_5.bungee.api.chat.ClickEvent
-import net.md_5.bungee.api.chat.ComponentBuilder
-import net.md_5.bungee.api.chat.HoverEvent
-import net.md_5.bungee.api.chat.hover.content.Text
-import net.md_5.bungee.api.connection.ProxiedPlayer
+import com.velocitypowered.api.proxy.Player
+import net.kyori.adventure.text.Component
+import net.kyori.adventure.text.minimessage.MiniMessage
+import net.kyori.adventure.text.minimessage.tag.resolver.Placeholder
 import org.openredstone.entity.Ballot
 
+val miniMessage = MiniMessage.miniMessage()
+const val votoreBaseMessage = "<dark_gray>[<gray>VotORE<dark_gray>] <reset><message>"
+const val votoreErrorMessage = "<dark_gray>[<red><b>!</b><gray>VotORE<dark_gray>] <reset><message>"
 
-// TODO ........... clean this up
-fun ProxiedPlayer.printSubmittableBallot(ballot: Ballot) {
-    for (i in 1..100) this.sendMessage(*ComponentBuilder().create())
-    this.sendMessage(
-        *ComponentBuilder()
-            .append("   ").reset().color(ChatColor.YELLOW).strikethrough(true)
-            .append(" Your current submittable ballot ").reset().color(ChatColor.GOLD).bold(true)
-            .append("   ").reset().color(ChatColor.YELLOW).strikethrough(true)
-            .create()
-    )
-    this.sendMessage(
-        *ComponentBuilder()
-            .append(" Shown below are the candidates you have selected for your ballot in order from most to least preferred. ")
-            .color(ChatColor.GRAY)
-            .create()
-    )
+fun Player.printSubmittableBallot(ballot: Ballot) {
+    for (i in 1..100) this.sendMessage(miniMessage.deserialize("<newline>"))
+    this.sendMessage(miniMessage.deserialize(
+        "<yellow><strikethrough>   <reset><gold> Your current submittable ballot <yellow><strikethrough>   "
+    ))
+    this.sendMessage(miniMessage.deserialize(
+        "<gray> Shown below are the candidates you have selected for your ballot in order from most to least preferred. "
+    ))
     ballot.includedNominees.forEachIndexed { i, it ->
-        this.sendMessage(
-            *ComponentBuilder()
-                .append("${i + 1}").color(ChatColor.GOLD).bold(true)
-                .append(" - ").reset().color(ChatColor.WHITE)
-                .append(it).color(ChatColor.YELLOW).bold(true)
-                .create()
-        )
+        this.sendMessage(miniMessage.deserialize(
+            "<gold><b>${i + 1}<reset><white> - <yellow><b>$it"
+        ))
     }
-    this.sendMessage(
-        *ComponentBuilder()
-            .append("(Not selected in your vote: ${ballot.excludedNominees.joinToString(", ")})").color(ChatColor.GRAY)
-            .create()
-    )
-    this.sendMessage(
-        *ComponentBuilder()
-            .append("Click here to modify your ballot").color(ChatColor.GOLD).bold(true)
-            .event(ClickEvent(ClickEvent.Action.RUN_COMMAND, "/election vote modifyballot"))
-            .event(HoverEvent(HoverEvent.Action.SHOW_TEXT, Text("Modify your ballot")))
-            .create()
-    )
-    this.sendMessage(
-        *ComponentBuilder()
-            .append("Run ").color(ChatColor.GRAY)
-            .append("/confirmvote").reset().color(ChatColor.RED).bold(true)
-            .append(" to submit your ballot (THIS ACTION CAN NOT BE UNDONE!)").reset().color(ChatColor.GRAY)
-            .create()
-    )
+    this.sendMessage(miniMessage.deserialize(
+        "<gray>(Not selected in your vote: ${ballot.excludedNominees.joinToString(", ")})"
+    ))
+    this.sendMessage(miniMessage.deserialize(
+        "<gold><b><click:run_command:'/election vote modifyballot'><hover:show_text:'Modify your ballot'>" +
+            "Click here to modify your ballot</hover></click>"
+    ))
+    this.sendMessage(miniMessage.deserialize(
+        "<gray>Run <red><b>/confirmvote<reset><gray> to submit your ballot " +
+            "<red><b>(THIS ACTION CAN NOT BE UNDONE!)"
+    ))
 }
 
-// TODO .................... clean this up also
-fun ProxiedPlayer.printBallot(ballot: Ballot, error: String? = null) {
-    for (i in 1..100) this.sendMessage(*ComponentBuilder().create())
+fun Player.printBallot(ballot: Ballot, error: String? = null) {
+    for (i in 1..100) this.sendMessage(miniMessage.deserialize("<newline>"))
     error?.let {
-        this.sendMessage(
-            *ComponentBuilder()
-                .append("!").color(ChatColor.DARK_RED).bold(true)
-                .append(" - ").reset().color(ChatColor.DARK_GRAY)
-                .append(" Error: $error").reset().color(ChatColor.GRAY)
-                .create()
-        )
+        this.sendMessage(miniMessage.deserialize(
+            "<dark_red><b>!<reset><dark_gray> - <gray>Error: $error"
+        ))
     }
-    this.sendMessage(
-        *ComponentBuilder()
-            .append("   ").reset().color(ChatColor.YELLOW).strikethrough(true)
-            .append(" Your current ballot ").reset().color(ChatColor.GOLD).bold(true)
-            .append("      ").reset().color(ChatColor.YELLOW).strikethrough(true)
-            .append(" ☑ ").reset().color(ChatColor.GREEN).bold(true)
-            .event(ClickEvent(ClickEvent.Action.RUN_COMMAND, "/election vote submit"))
-            .event(HoverEvent(HoverEvent.Action.SHOW_TEXT, Text("Submit your vote (You can alter this later)")))
-            .append("|").reset().color(ChatColor.YELLOW).bold(true)
-            .append(" ☒ ").reset().color(ChatColor.RED).bold(true)
-            .event(ClickEvent(ClickEvent.Action.RUN_COMMAND, "/election vote cancel"))
-            .event(HoverEvent(HoverEvent.Action.SHOW_TEXT, Text("Halt voting (You can vote again any time)")))
-            .create()
-    )
+    this.sendMessage(miniMessage.deserialize(
+        "<yellow><strikethrough>   <reset><gold> Your current ballot <yellow><strikethrough>      <reset>" +
+            "<green><b><click:run_command:'/election vote submit'>" +
+            "<hover:show_text:'Submit your vote (You can alter this later)'> ☑ </hover></click></green>" +
+            "<yellow>|</yellow>" +
+            "<red><b><click:run_command:'/election vote cancel'>" +
+            "<hover:show_text:'Halt voting (You can vote again any time)'> ☒ </hover></click></b></red>"
+    ))
     ballot.includedNominees.forEach {
-        this.sendMessage(
-            *ComponentBuilder()
-                .apply {
-                    if (ballot.includedNominees.indexOf(it) != 0) {
-                        this.append("ᐱ").reset().color(ChatColor.YELLOW).bold(true)
-                            .event(ClickEvent(ClickEvent.Action.RUN_COMMAND, "/election vote moveup $it"))
-                            .event(HoverEvent(HoverEvent.Action.SHOW_TEXT, Text("Move $it up your ballot")))
-                            .append(" | ").reset().color(ChatColor.GOLD).bold(true)
-                    } else {
-                        this.append("    ")
-                    }
-                }
-                .append("ᐯ").reset().color(ChatColor.YELLOW).bold(true)
-                .event(ClickEvent(ClickEvent.Action.RUN_COMMAND, "/election vote movedown $it"))
-                .event(HoverEvent(HoverEvent.Action.SHOW_TEXT, Text("Move $it down your ballot")))
-                .append(" | ").reset().color(ChatColor.GOLD).bold(true)
-                .append("✕").reset().color(ChatColor.RED).bold(true)
-                .event(ClickEvent(ClickEvent.Action.RUN_COMMAND, "/election vote remove $it"))
-                .event(HoverEvent(HoverEvent.Action.SHOW_TEXT, Text("Remove $it from your ballot")))
-                .append("   $it").reset().color(ChatColor.WHITE)
-                .create()
-        )
+        val prefix = if (ballot.includedNominees.indexOf(it) != 0) {
+            "<click:run_command:'/election vote moveup $it'><hover:show_text:'Move $it up your ballot'><yellow><b>ᐱ</b></yellow></hover></click><gold><b> | "
+        } else {
+            "     "
+        }
+        this.sendMessage(miniMessage.deserialize(
+            "$prefix<yellow><b><click:run_command:'/election vote movedown $it'>" +
+                "<hover:show_text:'Move $it down your ballot'>ᐯ</hover></click></b></yellow><gold><b> | </b></gold>" +
+                "<red><b><click:run_command:'/election vote remove $it'>" +
+                "<hover:show_text:'Remove $it from your ballot'>✕</hover></click></b></red><reset><white>   $it</white>"
+        ))
     }
     if (ballot.excludedNominees.isNotEmpty()) {
-        this.sendMessage(
-            *ComponentBuilder()
-                .append("   ").color(ChatColor.YELLOW).strikethrough(true)
-                .append(" Persons not included in your ballot ").reset().color(ChatColor.GOLD).bold(true)
-                .append("   ").color(ChatColor.YELLOW).strikethrough(true)
-                .create()
-        )
+        this.sendMessage(miniMessage.deserialize(
+            "<yellow><strikethrough>   <reset><gold> Persons not included in your ballot <yellow><strikethrough>   "
+        ))
         ballot.excludedNominees.sortedWith(String.CASE_INSENSITIVE_ORDER).forEach {
-            this.sendMessage(
-                *ComponentBuilder()
-                    .append("ᐱ").color(ChatColor.YELLOW).bold(true)
-                    .event(ClickEvent(ClickEvent.Action.RUN_COMMAND, "/election vote addback $it"))
-                    .event(HoverEvent(HoverEvent.Action.SHOW_TEXT, Text("Add $it back to your ballot")))
-                    .append(" - $it").reset().color(ChatColor.WHITE)
-                    .create()
-            )
+            this.sendMessage(miniMessage.deserialize(
+                "<yellow><b><click:run_command:'/election vote addback $it'>" +
+                    "<hover:show_text:'Add $it back to your ballot'>ᐱ</hover></click></b></yellow><white> - $it"
+            ))
         }
     }
 }
 
-fun ProxiedPlayer.sendVotoreError(message: String) =
-    this.sendVotore(
-        ComponentBuilder()
-            .append("[").color(ChatColor.DARK_GRAY)
-            .append("!").color(ChatColor.RED).bold(true)
-            .append("] ").reset().color(ChatColor.DARK_GRAY)
-            .append(message).color(ChatColor.GRAY)
-            .create()
-    )
-
-fun ProxiedPlayer.sendVotore(message: String) =
-    this.sendVotore(
-        ComponentBuilder()
-            .append(message)
-            .create()
-    )
-
-fun ProxiedPlayer.sendVotore(component: Array<BaseComponent>) =
+fun Player.sendVotoreError(message: String) =
     this.sendMessage(
-        *ComponentBuilder()
-            .append("[").color(ChatColor.DARK_GRAY)
-            .append("VotORE").color(ChatColor.GRAY)
-            .append("] ").color(ChatColor.DARK_GRAY)
-            .append(component).color(ChatColor.GRAY)
-            .create()
+        votoreErrorMessage.render(message)
     )
+
+fun Player.sendVotore(message: String) =
+    this.sendMessage(
+        votoreBaseMessage.render(message)
+    )
+
+fun Player.sendVotore(message: Component) =
+    this.sendMessage(
+        votoreBaseMessage.render(message)
+    )
+
+fun String.render(
+    message: String
+): Component = this.render(
+    mapOf("message" to Component.text(message))
+)
+
+fun String.render(
+    message: Component,
+): Component = this.render(
+    mapOf("message" to message)
+)
+
+fun String.render(
+    replacements: Map<String, Component> = emptyMap()
+): Component = miniMessage.deserialize(
+    this,
+    *replacements.map { Placeholder.component(it.key, it.value) }.toTypedArray()
+)

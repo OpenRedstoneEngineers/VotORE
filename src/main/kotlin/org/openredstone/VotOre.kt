@@ -1,27 +1,46 @@
 package org.openredstone
 
-import co.aikar.commands.BaseCommand
-import co.aikar.commands.BungeeCommandManager
-import co.aikar.commands.CommandIssuer
-import co.aikar.commands.RegisteredCommand
+import co.aikar.commands.*
+import com.google.inject.Inject
 import com.uchuhimo.konf.Config
 import com.uchuhimo.konf.source.yaml
 import com.uchuhimo.konf.source.yaml.toYaml
-import de.exceptionflug.protocolize.api.protocol.ProtocolAPI
-import net.md_5.bungee.api.plugin.Plugin
+import com.velocitypowered.api.event.Subscribe
+import com.velocitypowered.api.event.proxy.ProxyInitializeEvent
+import com.velocitypowered.api.plugin.Dependency
+import com.velocitypowered.api.plugin.Plugin
+import com.velocitypowered.api.plugin.annotation.DataDirectory
+import com.velocitypowered.api.proxy.ProxyServer
 import org.openredstone.commands.ElectionCommand
 import org.openredstone.commands.VotOreException
 import org.openredstone.entity.Ballot
 import org.openredstone.entity.VotOreSpec
 import org.openredstone.event.EventHandler
-import org.openredstone.listener.ChatListener
 import org.openredstone.manager.Sql
+import org.slf4j.Logger
 import java.io.File
+import java.nio.file.Path
 import java.util.*
-import java.util.logging.Level
 
-class VotOre : Plugin() {
-    var config = loadConfig()
+private const val VERSION = "0.1.0-SNAPSHOT"
+
+@Plugin(
+    id = "votore",
+    name = "VotORE",
+    version = VERSION,
+    url = "https://openredstone.org",
+    description = "Because we want to have a chat system that actually wOREks for us.",
+    authors = ["Nickster258", "PaukkuPalikka", "StackDoubleFlow"],
+    dependencies = [Dependency(id = "luckperms")]
+)
+class VotOre @Inject constructor(
+    val proxy: ProxyServer,
+    val logger: Logger,
+    @DataDirectory dataFolder: Path
+) {
+    private val dataFolder = dataFolder.toFile()
+    private var config = loadConfig()
+    var version = VERSION
     val database = Sql(
         config[VotOreSpec.VoterDatabase.host],
         config[VotOreSpec.VoterDatabase.port],
@@ -31,13 +50,11 @@ class VotOre : Plugin() {
     )
     var ballots = mutableMapOf<UUID, Ballot>()
 
-    override fun onEnable() {
+    @Subscribe
+    fun onProxyInitialization(event: ProxyInitializeEvent) {
         database.initTables()
-        ProtocolAPI.getEventManager().apply {
-            this.registerListener(ChatListener(this@VotOre))
-        }
-        proxy.pluginManager.registerListener(this, EventHandler(this))
-        BungeeCommandManager(this).apply {
+        proxy.eventManager.register(this, EventHandler(this))
+        VelocityCommandManager(this.proxy, this).apply {
             commandConditions.addCondition("activeelection") {
                 database.currentElectionId() ?: throw VotOreException("No active election!")
             }
@@ -58,30 +75,31 @@ class VotOre : Plugin() {
         throwable: Throwable
     ): Boolean {
         val exception = throwable as? VotOreException ?: run {
-            logger.log(Level.SEVERE, "Error while executing command", throwable)
+            logger.error("Error while executing command", throwable)
             return false
         }
         val message = exception.message ?: "Something went wrong!"
-        val player = proxy.getPlayer(sender.uniqueId)!!
-        player.sendVotoreError(message)
+        proxy.getPlayer(sender.uniqueId).ifPresent {
+            it.sendVotoreError(message)
+        }
         return true
     }
 
     private fun loadConfig(reloaded: Boolean = false): Config {
         if (!dataFolder.exists()) {
-            logger.log(Level.INFO, "No resource directory found, creating directory")
+            logger.info("No resource directory found, creating directory")
             dataFolder.mkdir()
         }
         val configFile = File(dataFolder, "config.yml")
         val loadedConfig = if (!configFile.exists()) {
-            logger.log(Level.INFO, "No config file found, generating from default config.yml")
+            logger.info("No config file found, generating from default config.yml")
             configFile.createNewFile()
             Config { addSpec(VotOreSpec) }
         } else {
             Config { addSpec(VotOreSpec) }.from.yaml.watchFile(configFile)
         }
         loadedConfig.toYaml.toFile(configFile)
-        logger.log(Level.INFO, "${if (reloaded) "Rel" else "L"}oaded config.yml")
+        logger.info("${if (reloaded) "Rel" else "L"}oaded config.yml")
         return loadedConfig
     }
 }

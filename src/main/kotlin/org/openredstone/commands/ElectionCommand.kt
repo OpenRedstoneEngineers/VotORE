@@ -2,12 +2,7 @@ package org.openredstone.commands
 
 import co.aikar.commands.BaseCommand
 import co.aikar.commands.annotation.*
-import net.md_5.bungee.api.ChatColor
-import net.md_5.bungee.api.chat.ClickEvent
-import net.md_5.bungee.api.chat.ComponentBuilder
-import net.md_5.bungee.api.chat.HoverEvent
-import net.md_5.bungee.api.chat.hover.content.Text
-import net.md_5.bungee.api.connection.ProxiedPlayer
+import com.velocitypowered.api.proxy.Player
 import org.openredstone.*
 import org.openredstone.entity.Ballot
 
@@ -20,8 +15,8 @@ class ElectionCommand(
     @CatchUnknown
     @Subcommand("info")
     @CommandPermission("election.info")
-    fun info(player: ProxiedPlayer) {
-        player.sendVotore("VotORE version ${votore.description.version}")
+    fun info(player: Player) {
+        player.sendVotore("VotORE version ${votore.version}")
     }
 
     @Subcommand("manage")
@@ -29,7 +24,7 @@ class ElectionCommand(
     inner class Manage : BaseCommand() {
         @Subcommand("create")
         @CommandCompletion("@range:0-5 @players")
-        fun create(player: ProxiedPlayer, @Single winners: Int, message: String) {
+        fun create(player: Player, @Single winners: Int, message: String) {
             val elecId = votore.database.currentElectionId()
             if (elecId != null) throw VotOreException("Election already in progress.")
             val ballot = message
@@ -41,37 +36,36 @@ class ElectionCommand(
 
         @Subcommand("votes")
         @Conditions("activeelection")
-        fun votes(player: ProxiedPlayer) {
+        fun votes(player: Player) {
             votore.database.currentElectionId()?.let {
-                player.sendVotore(
-                    "Total votes: ${
-                        votore.database.voteCounts(it)
-                    }"
-                )
+                player.sendVotore("Total votes: ${votore.database.voteCounts(it)}")
             }
         }
 
         @Subcommand("end")
         @Conditions("activeelection")
-        fun end(player: ProxiedPlayer) {
+        fun end(player: Player) {
             votore.database.currentElectionId()?.let {
                 votore.database.endElection(it)
-                player.sendVotore("Ended election. View results by running '/election manage results'")
+                player.sendVotore(miniMessage.deserialize(
+                    "Ended election. View results by running <gray>" +
+                        "<click:run_command:'/election manage results'><hover:show_text:'View results'>'/election manage results'"
+                ))
             }
         }
 
         @Subcommand("add")
-        fun add(player: ProxiedPlayer, @Single candidate: String) {
+        fun add(player: Player, @Single candidate: String) {
             player.sendVotore("TODO - Unimplemented")
         }
 
         @Subcommand("remove")
-        fun remove(player: ProxiedPlayer, @Single candidate: String) {
+        fun remove(player: Player, @Single candidate: String) {
             player.sendVotore("TODO - Unimplemented")
         }
 
         @Subcommand("results")
-        fun results(player: ProxiedPlayer) {
+        fun results(player: Player) {
             val electionId = votore.database.lastElectionId() ?: run {
                 player.sendVotoreError("No elections have taken place.")
                 return
@@ -101,14 +95,10 @@ class ElectionCommand(
                     "title" to "ORE Election Results"
                 )
             )
-            player.sendVotore(
-                ComponentBuilder()
-                    .append("URL: ").color(ChatColor.GRAY)
-                    .append(response.text.trim()).color(ChatColor.DARK_GRAY).underlined(true)
-                    .event(ClickEvent(ClickEvent.Action.OPEN_URL, response.text.trim()))
-                    .event(HoverEvent(HoverEvent.Action.SHOW_TEXT, Text(response.text.trim())))
-                    .create()
-            )
+            player.sendVotore(miniMessage.deserialize(
+                "URL: <gray><click:open_url:'${response.text.trim()}'>" +
+                    "<hover:show_text:'${response.text.trim()}'><u>${response.text.trim()}</u></hover></click>"
+            ))
         }
     }
 
@@ -120,7 +110,7 @@ class ElectionCommand(
         @Default
         @CommandAlias("vote")
         @Subcommand("vote")
-        fun vote(player: ProxiedPlayer) {
+        fun vote(player: Player) {
             when {
                 player.uniqueId in votore.ballots -> {
                     player.printBallot(votore.ballots[player.uniqueId]!!, "You are already voting!")
@@ -140,7 +130,7 @@ class ElectionCommand(
         }
 
         @Subcommand("moveup")
-        fun moveup(player: ProxiedPlayer, ballot: Ballot, @Single candidate: String) {
+        fun moveup(player: Player, ballot: Ballot, @Single candidate: String) {
             when (candidate) {
                 in ballot.includedNominees -> {
                     if (ballot.includedNominees.first() == candidate) {
@@ -162,7 +152,7 @@ class ElectionCommand(
         }
 
         @Subcommand("movedown")
-        fun movedown(player: ProxiedPlayer, ballot: Ballot, @Single candidate: String) {
+        fun movedown(player: Player, ballot: Ballot, @Single candidate: String) {
             when (candidate) {
                 in ballot.includedNominees -> {
                     if (ballot.includedNominees.last() == candidate) {
@@ -181,7 +171,7 @@ class ElectionCommand(
         }
 
         @Subcommand("remove")
-        fun remove(player: ProxiedPlayer, ballot: Ballot, @Single candidate: String) {
+        fun remove(player: Player, ballot: Ballot, @Single candidate: String) {
             when (candidate) {
                 in ballot.includedNominees -> {
                     ballot.includedNominees.remove(candidate)
@@ -197,7 +187,7 @@ class ElectionCommand(
         }
 
         @Subcommand("addback")
-        fun addback(player: ProxiedPlayer, ballot: Ballot, @Single candidate: String) {
+        fun addback(player: Player, ballot: Ballot, @Single candidate: String) {
             when (candidate) {
                 in ballot.includedNominees -> player.printBallot(
                     ballot,
@@ -213,26 +203,26 @@ class ElectionCommand(
         }
 
         @Subcommand("cancel")
-        fun cancel(player: ProxiedPlayer, ballot: Ballot) {
+        fun cancel(player: Player, ballot: Ballot) {
             votore.ballots.remove(player.uniqueId)
             player.sendVotore("Cancelled voting. You can vote any time by running '/vote'.")
         }
 
         @Subcommand("modifyballot")
-        fun modifyballot(player: ProxiedPlayer, ballot: Ballot) {
+        fun modifyballot(player: Player, ballot: Ballot) {
             ballot.submit = false
             player.printBallot(ballot)
         }
 
         @Subcommand("submit")
-        fun submit(player: ProxiedPlayer, ballot: Ballot) {
+        fun submit(player: Player, ballot: Ballot) {
             ballot.submit = true
             player.printSubmittableBallot(ballot)
         }
 
         @CommandAlias("confirmvote")
         @Subcommand("confirmvote")
-        fun confirmvote(player: ProxiedPlayer, ballot: Ballot) {
+        fun confirmvote(player: Player, ballot: Ballot) {
             if (!ballot.submit) {
                 player.printBallot(ballot, "You have no vote to confirm.")
                 return
@@ -250,13 +240,13 @@ class ElectionCommand(
             }
             if (!votore.database.electionBallot(electionId).values.containsAll(ballot.includedNominees)) {
                 player.sendVotoreError("The ballot you are trying to submit is malformed.")
-                player.sendVotoreError("If you are encountering this error after guided voting, please tell Staff immediately.")
+                player.sendVotoreError("If you are encountering this error after guided voting, please tell Staff.")
                 player.sendVotoreError("You may restart your voting process at any time.")
                 votore.ballots.remove(player.uniqueId)
                 return
             }
             votore.logger.info(
-                "Confirmed by ${player.name}:${player.uniqueId} vote: ${
+                "Confirmed by ${player.username}:${player.uniqueId} vote: ${
                     ballot.includedNominees.joinToString(
                         ", "
                     )
@@ -264,7 +254,9 @@ class ElectionCommand(
             )
             println("Confirmed vote: ${ballot.includedNominees.joinToString(", ")}")
             player.sendVotore("Your vote, in order of preference: ${ballot.includedNominees.joinToString(", ")}.")
-            player.sendVotore("Excluded from your vote: ${ballot.excludedNominees.joinToString(", ")}")
+            if (ballot.excludedNominees.isNotEmpty()) {
+                player.sendVotore("Excluded from your vote: ${ballot.excludedNominees.joinToString(", ")}")
+            }
             player.sendVotore("If there is an error in your submitted vote, please tell Staff immediately.")
             votore.database.insertVote(electionId, player.uniqueId, ballot.includedNominees)
             votore.ballots.remove(player.uniqueId)

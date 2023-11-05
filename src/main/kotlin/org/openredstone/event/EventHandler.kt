@@ -1,31 +1,30 @@
 package org.openredstone.event
 
-import net.md_5.bungee.api.connection.ProxiedPlayer
-import net.md_5.bungee.api.event.ChatEvent
-import net.md_5.bungee.api.event.PlayerDisconnectEvent
-import net.md_5.bungee.api.plugin.Listener
-import net.md_5.bungee.event.EventHandler
+import com.velocitypowered.api.event.Subscribe
+import com.velocitypowered.api.event.connection.DisconnectEvent
+import com.velocitypowered.api.event.player.PlayerChatEvent
+import com.velocitypowered.api.proxy.Player
 import org.openredstone.VotOre
 import org.openredstone.printBallot
 
-class EventHandler(private val votOre: VotOre) : Listener {
-    @EventHandler
-    fun onLeave(event: PlayerDisconnectEvent) {
+class EventHandler(
+    private val votOre: VotOre
+) {
+    @Subscribe
+    fun onLeave(event: DisconnectEvent) {
         votOre.ballots.remove(event.player.uniqueId)
     }
 
-    @EventHandler
-    fun onChat(event: ChatEvent) {
-        if (event.sender !is ProxiedPlayer) {
+    @Subscribe
+    fun onChat(event: PlayerChatEvent) {
+        if (event.player !is Player) {
             return
         }
-        if (event.isProxyCommand) {
+        if (event.message.startsWith("/")) {
             return
         }
-        val player = event.sender as ProxiedPlayer
-        if (votOre.ballots.containsKey(player.uniqueId)) {
-            event.isCancelled = true
-            player.printBallot(votOre.ballots[player.uniqueId]!!, "You have to exit voting in order to chat!")
+        if (votOre.ballots.containsKey(event.player.uniqueId)) {
+            event.player.printBallot(votOre.ballots[event.player.uniqueId]!!, "You are still in the process of voting!")
         }
     }
 }
