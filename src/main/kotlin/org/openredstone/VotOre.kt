@@ -29,8 +29,8 @@ private const val VERSION = "0.1.0-SNAPSHOT"
     name = "VotORE",
     version = VERSION,
     url = "https://openredstone.org",
-    description = "Because we want to have a chat system that actually wOREks for us.",
-    authors = ["Nickster258", "PaukkuPalikka", "StackDoubleFlow"],
+    description = "An ingame election management system for ORE",
+    authors = ["Nickster258", "PaukkuPalikka"],
     dependencies = [Dependency(id = "luckperms")]
 )
 class VotOre @Inject constructor(
