@@ -14,10 +14,10 @@ class Sql(
     database: String,
     user: String,
     password: String,
-    driver: String = "com.mysql.cj.jdbc.Driver"
+    driver: String = "org.mariadb.jdbc.Driver"
 ) {
     private val database = Database.connect(
-        "jdbc:mysql://${host}:${port}/${database}",
+        "jdbc:mariadb://${host}:${port}/${database}",
         driver = driver,
         user = user,
         password = password
@@ -55,17 +55,17 @@ class Sql(
     }
 
     fun electionWinners(electionId: Int): Int? = transaction(database) {
-        Sql.Election.select {
+        Sql.Election.selectAll().where {
             Sql.Election.id eq electionId
         }.firstOrNull()?.get(Sql.Election.winners)
     }
 
     fun electionBallot(electionId: Int): Map<Int, String> = transaction(database) {
-        Sql.Election.select {
+        Sql.Election.selectAll().where {
             Sql.Election.id eq electionId
         }.orderBy(Sql.Election.id to SortOrder.DESC)
             .first().let {
-                Sql.Candidate.select {
+                Sql.Candidate.selectAll().where {
                     Sql.Candidate.elecId eq it[Sql.Election.id]
                 }.orderBy(Sql.Candidate.id to SortOrder.ASC).map {
                     it[Sql.Candidate.id] to it[Sql.Candidate.candidate]
@@ -91,7 +91,7 @@ class Sql(
     }
 
     fun voteCounts(electionId: Int): Int = transaction(database) {
-        Sql.Vote.select {
+        Sql.Vote.selectAll().where {
             Sql.Vote.election eq electionId
         }.map {
             it[Sql.Vote.voter].toUuid()
@@ -99,7 +99,7 @@ class Sql(
     }
 
     fun votes(electionId: Int): List<Vote> = transaction(database) {
-        Sql.Vote.select {
+        Sql.Vote.selectAll().where {
             Sql.Vote.election eq electionId
         }.orderBy(Sql.Vote.index to SortOrder.ASC).map {
             Vote(
@@ -111,7 +111,7 @@ class Sql(
     }
 
     fun voterExists(electionId: Int, voterId: UUID): Boolean = transaction(database) {
-        !Sql.Vote.select {
+        !Sql.Vote.selectAll().where {
             (Sql.Vote.voter eq voterId.toBin()) and (Sql.Vote.election eq electionId)
         }.empty()
     }
@@ -121,7 +121,7 @@ class Sql(
             this[Sql.Vote.voter] = voterId.toBin()
             this[Sql.Vote.index] = index + 1
             this[Sql.Vote.election] = electionId
-            Sql.Candidate.select {
+            Sql.Candidate.selectAll().where {
                 (Sql.Candidate.candidate eq candidate) and (Sql.Candidate.elecId eq electionId)
             }.first().let {
                 this[Sql.Vote.canId] = it[Sql.Candidate.id]

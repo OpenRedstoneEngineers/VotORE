@@ -1,9 +1,9 @@
 import org.jetbrains.kotlin.gradle.tasks.KotlinCompile
 
 plugins {
-    id("org.jetbrains.kotlin.jvm") version "1.5.31"
-    id("com.github.johnrengelman.shadow") version "7.1.0"
-    id("org.jetbrains.kotlin.kapt") version "1.6.10"
+    kotlin("jvm") version "2.0.10"
+    id("com.gradleup.shadow") version "8.3.0"
+    id("org.jetbrains.kotlin.kapt") version "1.9.22"
 }
 
 group = "org.openredstone"
@@ -31,10 +31,11 @@ repositories {
 dependencies {
     testImplementation(kotlin("test-junit"))
     implementation(kotlin("stdlib-jdk8"))
-    implementation(group = "com.github.jkcclemens", name = "khttp", version = "0.1.0")
+    implementation(group = "org.mariadb.jdbc", name = "mariadb-java-client", version = "3.5.1")
+    implementation(group = "org.danilopianini", name = "khttp", version = "1.6.3")
     implementation(group = "co.aikar", name = "acf-velocity", version = "0.5.1-SNAPSHOT")
-    implementation(group = "org.jetbrains.exposed", name = "exposed-core", version = "0.40.1")
-    implementation(group = "org.jetbrains.exposed", name = "exposed-jdbc", version = "0.40.1")
+    implementation(group = "org.jetbrains.exposed", name = "exposed-core", version = "0.58.0")
+    implementation(group = "org.jetbrains.exposed", name = "exposed-jdbc", version = "0.58.0")
     implementation(group = "com.uchuhimo", name = "konf", version = "1.1.2")
     implementation(group = "mysql", name = "mysql-connector-java", version = "8.0.19")
     implementation(group = "com.velocitypowered", name = "velocity-api", version = "3.2.0-SNAPSHOT")
@@ -47,7 +48,7 @@ tasks.shadowJar {
 }
 
 tasks.withType<KotlinCompile> {
-    kotlinOptions.jvmTarget = "1.8"
+    kotlinOptions.jvmTarget = "22"
     kotlinOptions.javaParameters = true
 }
 
